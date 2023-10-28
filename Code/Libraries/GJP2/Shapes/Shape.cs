@@ -18,10 +18,13 @@ public struct Shape
             if(value == TruePosition) return;
 
             TruePosition = value;
-            if(this.ShapeType == Type.Circle) return;
+            if(this.ShapeType == Type.Circle)
+            {
+                Should.updateArea = true;
+                return;
+            }
             Should.updateModel = true;
             Should.updateArea = true;
-            SendBakeRequest();
         }
     }
 
@@ -33,10 +36,13 @@ public struct Shape
             if(value == TrueCenterPoint) return;
 
             TrueCenterPoint = value;
-            if(this.ShapeType == Type.Circle) return;
+            if(this.ShapeType == Type.Circle)
+            {
+                Should.updateArea = true;
+                return;
+            }
             Should.updateModel = true;
             Should.updateArea = true;
-            SendBakeRequest();
         }
     }
 
@@ -51,7 +57,6 @@ public struct Shape
             Should.updateModel = true;
             Should.updateArea = true;
             Should.updateNormals = ShapeType == Shape.Type.Convex;
-            SendBakeRequest();
         }
     }
 
@@ -67,6 +72,7 @@ public struct Shape
                     throw new Exception("In a circle shape the scale vector must have its x equal to y.");
 
                 TrueScale = value;
+                Should.updateArea = true;
                 
                 return;
             }
@@ -74,7 +80,6 @@ public struct Shape
             TrueScale = value;
             Should.updateModel = true;
             Should.updateArea = true;
-            SendBakeRequest();
         }
     }
 
@@ -88,13 +93,9 @@ public struct Shape
     VecMemBlock BakedModel;
     VecMemBlock Normals;
     AABB Area;
-
-    public ShapeCook Chef = null;
-
-    private int SentToChef = int.MinValue;
     private bool DisposedActual = false;
 
-    (bool updateModel, bool updateArea, bool updateNormals) Should = (false, false, false);
+    (bool updateModel, bool updateArea, bool updateNormals) Should;
 
     public void BakeShape()
     {
@@ -102,7 +103,7 @@ public struct Shape
 
         if(Should.updateModel)
         {
-            UpdateModel();
+            //UpdateModel(BakedModel.AsSpan(), TruePosition, TrueCenterPoint, TrueRotation, TrueScale);
             Should.updateModel = false;
         }
 
@@ -117,8 +118,6 @@ public struct Shape
             UpdateNormals();
             Should.updateNormals = false;
         }
-
-        SentToChef = int.MinValue;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -152,25 +151,14 @@ public struct Shape
         }
     }
 
-    private void SendBakeRequest()
+    private void UpdateModel (Span<Vector2Fi> baked, Vector2Fi pos, Vector2Fi center, FInt rot, Vector2Fi scale)
     {
-        if(Chef != null && SentToChef != Chef.Id) Chef.QueueShapeToCook(this);
-    }
-
-    private void UpdateModel ()
-    {
-        var rot = TrueRotation;
-        var pos = TruePosition;
-        var center = TrueCenterPoint;
-
         var origin = OriginModel.AsSpan();
-        var baked = BakedModel.AsSpan();
         for(int i = 0; i < origin.Length; ++i)
         {
-            Vector2Fi curr = origin[i] * TrueScale;
+            Vector2Fi curr = origin[i] * scale;
             baked[i] = Vector2Fi.RotateVec(curr, center, rot) + pos + TrueCenterPoint;
         }
-        
     }
 
     private void UpdateArea()
@@ -178,8 +166,8 @@ public struct Shape
         if(ShapeType == Shape.Type.Circle)
         {
             Vector2Fi center = TruePosition + TrueCenterPoint;
-            Area.TopLeft = center - BakedModel[0];
-            Area.BottomRight = center + BakedModel[0];
+            Area.TopLeft = center - TrueScale;
+            Area.BottomRight = center + TrueScale;
             return;
         }
 
@@ -238,10 +226,6 @@ public struct Shape
         //NormalsAction = DoNothing;
     }
 
-    private void TestCol()
-    {
-        
-    }
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     [SkipLocalsInit]
     private void ConvexConvexIntersectsInfo(Shape poly, ref CollisionResult result)
@@ -511,6 +495,8 @@ public struct Shape
             ShapeType = type;
             OriginModel = VecMemBlock.NullBlock();
             BakedModel = VecMemBlock.NullBlock();
+            Normals = VecMemBlock.NullBlock();
+            Should = (false, true, false);
             return;
         }
 
@@ -523,9 +509,10 @@ public struct Shape
         OriginModel.CopyFrom(originalModel, originalModel.Length);
         BakedModel = ShapeVecPool.Allocate(originalModel.Length);
         Normals = ShapeVecPool.Allocate(originalModel.Length);
-        UpdateModel();
-        UpdateArea();
-        UpdateNormals();
+        Should = (true, true, true);
+        //UpdateModel(BakedModel.AsSpan(), TruePosition, TrueCenterPoint, TrueRotation, TrueScale);
+        //UpdateArea();
+        //UpdateNormals();
     }
 
     private static Shape NewRaw(Vector2Fi pos, Vector2Fi center, FInt rotation, Vector2Fi scale, Shape.Type type, Span<Vector2Fi> originalModel)
@@ -642,20 +629,10 @@ public struct Shape
     private void Clear()
     {
         Should = (false, false, false);
-        Chef = null;
         DisposedActual = true;
         OriginModel.Dispose();
         BakedModel.Dispose();
         Normals.Dispose();
-    }
-
-    public void Recycle()
-    {
-        if(!DisposedActual) throw new Exception("Tried to reclycle shape multiple times.");
-        DisposedActual = false;
-        UpdateModel();
-        UpdateArea();
-        if(ShapeType == Shape.Type.Convex) UpdateNormals();
     }
 
     public struct AABB

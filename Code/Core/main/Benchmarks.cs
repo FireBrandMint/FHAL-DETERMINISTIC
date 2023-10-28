@@ -18,12 +18,14 @@ public class Benchmarks
     public static void Main(string[] args)
     {
         string line;
+        int times = 0;
         while(true)
         {
             line = Console.ReadLine();
             if(line == "end") break;
             int fodder;
-            int times = int.TryParse(line, out fodder) ? fodder : 6000;
+            if(int.TryParse(line, out fodder)) times = fodder;
+            else if (line != "r") times = 6000;
             
             for(int i = 0; i < BenchmarkTargets.Length; ++i)
                 DoBenchmark(BenchmarkTargets[i], times);

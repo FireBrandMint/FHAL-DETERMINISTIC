@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
+using GJP2.Optimization;
 
 namespace GJP2;
 public static class ShapeColBench
@@ -16,17 +17,23 @@ public static class ShapeColBench
 
     #pragma warning restore 0414
 
+    static ShapeColBench ()
+    {
+        Initialize();
+        s1 = Shape.NewRectangle(new Vector2Fi(0,0), new Vector2Fi(0,0), new FInt(5), new Vector2Fi(5,5), new Vector2Fi(1,1));
+        s2 = Shape.NewRectangle(new Vector2Fi(2,0), new Vector2Fi(0,0), new FInt(-5), new Vector2Fi(5,5), new Vector2Fi(1,1));
+    }
+
     static void Initialize ()
     {
-        TestPool = new Shape[8000];
+        int size = 128;
+        TestPool = new Shape[size];
 
-        for(int i = 0; i < 8000; i += 2)
+        for(int i = 0; i < size; i += 2)
         {
             TestPool[i] = Shape.NewRectangle(new Vector2Fi(0,0), new Vector2Fi(0,0), new FInt(5), new Vector2Fi(5,5), new Vector2Fi(1,1));
             TestPool[i + 1] = Shape.NewRectangle(new Vector2Fi(2,0), new Vector2Fi(0,0), new FInt(-5), new Vector2Fi(5,5), new Vector2Fi(1,1));
         }
-
-        Dorment = false;
     }
 
     static void InitInternalCache()
@@ -40,20 +47,27 @@ public static class ShapeColBench
         Dorment = false;
     }
 
-    static Shape s1 = Shape.NewRectangle(new Vector2Fi(0,0), new Vector2Fi(0,0), new FInt(5), new Vector2Fi(5,5), new Vector2Fi(1,1));
-    static Shape s2 = Shape.NewRectangle(new Vector2Fi(2,0), new Vector2Fi(0,0), new FInt(-5), new Vector2Fi(5,5), new Vector2Fi(1,1));
-
+    static Shape s1;
+    static Shape s2;
     public static void TestCol1()
     {
-        if(Dorment) InitInternalCache();
-        //if(Dorment) Initialize();
+        //if(Dorment) InitInternalCache();
+        //Shape s1 = TestPool[rand.Next(TestPool.Length - 6000) + 6000];
+        //Shape s2 = TestPool[rand.Next(TestPool.Length - 2000)];
+        Shape s1 = Shape.NewRectangle(new Vector2Fi(0,0), new Vector2Fi(0,0), new FInt(5), new Vector2Fi(5,5), new Vector2Fi(1,1));
+        Shape s2 = Shape.NewRectangle(new Vector2Fi(2,0), new Vector2Fi(0,0), new FInt(-5), new Vector2Fi(5,5), new Vector2Fi(1,1));
+        s1.Position += new Vector2Fi(5, 0);
+        s2.Position += new Vector2Fi(5, 0);
+        s1.Rotation += 5;
+        s2.Rotation += 5;
+        s1.BakeShape();
+        s2.BakeShape();
 
-        //Shape s1 = Shape.NewRectangle(new Vector2Fi(0,0), new Vector2Fi(0,0), new FInt(5), new Vector2Fi(5,5), new Vector2Fi(1,1));
-        //Shape s2 = Shape.NewRectangle(new Vector2Fi(2,0), new Vector2Fi(0,0), new FInt(-5), new Vector2Fi(5,5), new Vector2Fi(1,1));
         
         CollisionResult res = new CollisionResult();
         s1.IntersectsInfo(s2, ref res);
         res.Separation += new Vector2Fi();
+
 
         s1.Dispose();
         s2.Dispose();

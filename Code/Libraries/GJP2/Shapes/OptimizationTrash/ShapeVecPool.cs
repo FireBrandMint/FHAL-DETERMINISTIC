@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 namespace GJP2.Optimization;
 public static class ShapeVecPool
 {
-    public static Vector2Fi[] Memory;
     static List<FreeBlock> FreeIndex;
+    public static Vector2Fi[] Memory;
 
     static ShapeVecPool()
     {
@@ -154,6 +154,11 @@ public static class ShapeVecPool
         {
             FreeIndex.RemoveAt(found[i]);
         }
+    }
+
+    public static int FreeIndexSize()
+    {
+        return FreeIndex.Count;
     }
 
     private static int ExpandMemory()
