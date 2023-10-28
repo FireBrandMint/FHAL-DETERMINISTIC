@@ -9,3 +9,7 @@ Creating a co-op dungeon GGPO game in this just might be possible. Among other t
 Any help is appreciated though i am certain i won't get any.
 
 In the offchance you wanna help, please use the discussion discord server is https://discord.gg/vdCeUpKS @me for anything. Specially for understanding some piece of code; reading code is hard and i'd happily explain how this works.
+
+# License clarification
+
+Though the project itself is under the apache attribution license, internal libraries might just have even more lax licenses. GJP2 for example is under the MIT license.
