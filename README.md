@@ -1,4 +1,4 @@
-# FHAL-MONOGAME
+# FHAL-DETERMINISTIC
 
 Deterministic game template. Unusable as of now.
 
