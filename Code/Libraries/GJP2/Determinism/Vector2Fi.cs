@@ -245,6 +245,15 @@ public readonly struct Vector2Fi
         return DeterministicMath.Sqrt(x*x + y*y);
     }
 
+    /// <summary>
+    /// Faster length that can process numbers up to 900 on x and y.
+    /// </summary>
+    /// <returns></returns>
+    public FInt OptLength ()
+    {
+        return DeterministicMath.Sqrt(x*x + y*y);
+    }
+
     public Vector2Fi Normalized()
     {
         bool xZero, yZero;
@@ -262,6 +271,30 @@ public readonly struct Vector2Fi
         }
 
         FInt length = (this).Length();
+
+        return this / length;
+    }
+    /// <summary>
+    /// Faster normalized that can process numbers up to 900 on x and y.
+    /// </summary>
+    /// <returns></returns>
+    public Vector2Fi OptNormalized()
+    {
+        bool xZero, yZero;
+
+        xZero = x.RawValue == 0;
+        yZero = y.RawValue == 0;
+
+        //If below assures normalize doesn't calculate an answer it already has.
+        if(xZero | yZero)
+        {
+            var o = new FInt(1);
+            if (xZero & yZero) return ZERO;
+            if (xZero) return new Vector2Fi(new FInt(), y < 0? -o:o);
+            return new Vector2Fi(x < 0? -o:o, new FInt());
+        }
+
+        FInt length = (this).OptLength();
 
         return this / length;
     }

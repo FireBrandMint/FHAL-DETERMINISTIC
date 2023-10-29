@@ -36,7 +36,12 @@ public class DeterministicMath
     public static FInt Sqrt( FInt f )
 
     {
-
+        if(f.RawValue < 7864320000L)
+        {
+            FInt result;
+            result.RawValue = (long)(sqrtfx16((ulong)f.RawValue << 4) >> 4);
+            return result;
+        }
 
         byte numberOfIterations = 8;
 
@@ -68,6 +73,73 @@ public class DeterministicMath
         return k;
     }
     #endregion
+
+    /// <summary>
+    /// Faster sqrt that can process numbers up to 1.920.000.
+    /// </summary>
+    /// <returns></returns>
+    public static FInt OptSqrt( FInt f )
+    {
+        FInt result;
+        result.RawValue = (long)(sqrtfx16((ulong)f.RawValue << 4) >> 4);
+        return result;
+    }
+
+    //from chmike/fpsqrt
+    private static ulong sqrtfx16(ulong v) {
+    ulong t, q, b, r;
+    r = v; 
+    q = 0;          
+    b = 0x40000000UL;
+    if( r < 0x40000200 )
+    {
+        while( b != 0x40 )
+        {
+            t = q + b;
+            if( r >= t )
+            {
+                r -= t;
+                q = t + b; // equivalent to q += 2*b
+            }
+            r <<= 1;
+            b >>= 1;
+        }
+        q >>= 8;
+        return q;
+    }
+    while( b > 0x40 )
+    {
+        t = q + b;
+        if( r >= t )
+        {
+            r -= t;
+            q = t + b; // equivalent to q += 2*b
+        }
+        if( (r & 0x80000000) != 0 )
+        {
+            q >>= 1;
+            b >>= 1;
+            r >>= 1;
+            while( b > 0x20 )
+            {
+                t = q + b;
+                if( r >= t )
+                {
+                    r -= t;
+                    q = t + b;
+                }
+                r <<= 1;
+                b >>= 1;
+            }
+            q >>= 7;
+            return q;
+        }
+        r <<= 1;
+        b >>= 1;
+    }
+    q >>= 8;
+    return q;
+}
 
     #region Sin
     public static FInt Sin( FInt i )

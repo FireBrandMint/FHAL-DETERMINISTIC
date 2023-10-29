@@ -26,13 +26,15 @@ public static class ShapeColBench
 
     static void Initialize ()
     {
-        int size = 128;
+        int size = 8000;
         TestPool = new Shape[size];
 
         for(int i = 0; i < size; i += 2)
         {
             TestPool[i] = Shape.NewRectangle(new Vector2Fi(0,0), new Vector2Fi(0,0), new FInt(5), new Vector2Fi(5,5), new Vector2Fi(1,1));
             TestPool[i + 1] = Shape.NewRectangle(new Vector2Fi(2,0), new Vector2Fi(0,0), new FInt(-5), new Vector2Fi(5,5), new Vector2Fi(1,1));
+            TestPool[i].BakeShape();
+            TestPool[i + 1].BakeShape();
         }
     }
 
@@ -52,21 +54,21 @@ public static class ShapeColBench
     public static void TestCol1()
     {
         //if(Dorment) InitInternalCache();
-        //Shape s1 = TestPool[rand.Next(TestPool.Length - 6000) + 6000];
-        //Shape s2 = TestPool[rand.Next(TestPool.Length - 2000)];
-        Shape s1 = Shape.NewRectangle(new Vector2Fi(0,0), new Vector2Fi(0,0), new FInt(5), new Vector2Fi(5,5), new Vector2Fi(1,1));
-        Shape s2 = Shape.NewRectangle(new Vector2Fi(2,0), new Vector2Fi(0,0), new FInt(-5), new Vector2Fi(5,5), new Vector2Fi(1,1));
-        s1.Position += new Vector2Fi(5, 0);
-        s2.Position += new Vector2Fi(5, 0);
-        s1.Rotation += 5;
-        s2.Rotation += 5;
+        Shape s1 = TestPool[rand.Next(TestPool.Length - 6000) + 6000];
+        Shape s2 = TestPool[rand.Next(TestPool.Length - 2000)];
+        //Shape s1 = Shape.NewRectangle(new Vector2Fi(0,0), new Vector2Fi(0,0), new FInt(5), new Vector2Fi(5,5), new Vector2Fi(1,1));
+        //Shape s2 = Shape.NewRectangle(new Vector2Fi(2,0), new Vector2Fi(0,0), new FInt(-5), new Vector2Fi(5,5), new Vector2Fi(1,1));
+        //s1.Position += new Vector2Fi(1, 0);
+        //s2.Position += new Vector2Fi(1, 0);
+        s1.Rotation += 1;
+        s2.Rotation += 1;
         s1.BakeShape();
         s2.BakeShape();
 
         
-        CollisionResult res = new CollisionResult();
-        s1.IntersectsInfo(s2, ref res);
-        res.Separation += new Vector2Fi();
+        //CollisionResult res = new CollisionResult();
+        //s1.IntersectsInfo(s2, ref res);
+        //res.Separation += new Vector2Fi();
 
 
         s1.Dispose();

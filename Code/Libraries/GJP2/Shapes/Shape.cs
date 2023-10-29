@@ -103,7 +103,7 @@ public struct Shape
 
         if(Should.updateModel)
         {
-            //UpdateModel(BakedModel.AsSpan(), TruePosition, TrueCenterPoint, TrueRotation, TrueScale);
+            UpdateModel(BakedModel.AsSpan(), TruePosition, TrueCenterPoint, TrueRotation, TrueScale);
             Should.updateModel = false;
         }
 
@@ -211,7 +211,7 @@ public struct Shape
                 
             normaly = p2.x - p1.x;
 
-            Normals[i] = new Vector2Fi(normalx, normaly).Normalized();
+            Normals[i] = new Vector2Fi(normalx, normaly).OptNormalized();
         }
 
         p1 = BakedModel[len];
@@ -221,7 +221,7 @@ public struct Shape
                 
         normaly = p2.x - p1.x;
 
-        Normals[len] = new Vector2Fi(normalx, normaly).Normalized();
+        Normals[len] = new Vector2Fi(normalx, normaly).OptNormalized();
 
         //NormalsAction = DoNothing;
     }
