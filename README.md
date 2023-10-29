@@ -8,7 +8,7 @@ Creating a co-op dungeon GGPO game in this just might be possible. Among other t
 
 Any help is appreciated though i am certain i won't get any.
 
-In the offchance you wanna help, please use the discussion discord server is https://discord.gg/vdCeUpKS @me for anything. Specially for understanding some piece of code; reading code is hard and i'd happily explain how this works.
+In the offchance you wanna help, just make a fork and contribute.
 
 # License clarification
 
