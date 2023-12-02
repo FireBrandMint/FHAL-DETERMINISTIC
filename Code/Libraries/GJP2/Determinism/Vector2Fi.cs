@@ -13,7 +13,7 @@ public readonly struct Vector2Fi
 
     static Vector2Fi ()
     {
-        ZERO = new Vector2Fi();
+        ZERO = new Vector2Fi(0,0);
     }
 
     public readonly FInt x,y;
@@ -222,10 +222,78 @@ public readonly struct Vector2Fi
         return DistanceSquared(point, D);
     }
 
+    public static (FInt distanceSquared, Vector2Fi collisionPoint) LinePointColAnalisis(
+        Vector2Fi point, Vector2Fi vertA, Vector2Fi vertB
+        )
+    {
+        Vector2Fi colPoint;
+        FInt distanceSquared;
+
+        Vector2Fi ab = vertB - vertA;
+        Vector2Fi ap = point - vertA;
+
+        //If it's a point then just return a random segment vs the point
+        if(ab == ZERO)
+        {
+            colPoint = vertA;
+            goto end;
+        }
+
+        FInt proj = DotProduct(ap, ab);
+        FInt abLenSq = ab.LengthSqr();
+        FInt d = proj / abLenSq;
+
+        if(d <= new FInt(0L))
+        {
+            colPoint = vertA;
+        }
+        else if(d >= FInt.OneF)
+        {
+            colPoint = vertB;
+        }
+        else
+        {
+            colPoint = vertA + ab * d;
+        }
+
+        end:;
+        distanceSquared = Vector2Fi.DistanceSquared(point, colPoint);
+        return (distanceSquared, colPoint);
+    }
+
+    public static bool NearlyEqual(Vector2Fi a, Vector2Fi b, FInt thresold)
+    {
+        return DeterministicMath.NearlyEqual(a.x, b.x, thresold) & DeterministicMath.NearlyEqual(a.y, b.y, thresold);
+    }
+
     public static Vector2Fi RotateVec(Vector2Fi toRotate, Vector2Fi center, FInt degrees)
     {
         FInt sin = DeterministicMath.SinD(degrees);
         FInt cos = DeterministicMath.CosD(degrees);
+ 
+        // Translate point back to origin
+        FInt x = toRotate.x - center.x;
+        FInt y = toRotate.y - center.y;
+ 
+        // Rotate point
+        FInt xnew = x * cos - y * sin;
+        FInt ynew = x * sin + y * cos;
+     
+        // Translate point back
+        Vector2Fi newPoint = new Vector2Fi(xnew + center.x, ynew + center.y);
+        return newPoint;
+    }
+    /// <summary>
+    /// Rotates with a point angle value. (1 pointAngle = pi, 0.5 pointAngle = pi/2)
+    /// </summary>
+    /// <param name="toRotate"></param>
+    /// <param name="center"></param>
+    /// <param name="pointAngle"></param>
+    /// <returns></returns>
+    public static Vector2Fi RotateVecP(Vector2Fi toRotate, Vector2Fi center, FInt pointAngle)
+    {
+        FInt sin = DeterministicMath.SinPoint(pointAngle);
+        FInt cos = DeterministicMath.CosPoint(pointAngle);
  
         // Translate point back to origin
         FInt x = toRotate.x - center.x;
@@ -244,6 +312,10 @@ public readonly struct Vector2Fi
     {
         return DeterministicMath.Sqrt(x*x + y*y);
     }
+    public FInt LengthSqr()
+    {
+        return x*x + y*y;
+    }
 
     /// <summary>
     /// Faster length that can process numbers up to 900 on x and y.
@@ -261,6 +333,9 @@ public readonly struct Vector2Fi
         xZero = x.RawValue == 0;
         yZero = y.RawValue == 0;
 
+        if(DeterministicMath.Abs(x) < 900 & DeterministicMath.Abs(y) < 900)
+            return OptNormalized();
+
         //If below assures normalize doesn't calculate an answer it already has.
         if(xZero | yZero)
         {
@@ -270,7 +345,8 @@ public readonly struct Vector2Fi
             return new Vector2Fi(x < 0? -o:o, new FInt());
         }
 
-        FInt length = (this).Length();
+        
+        var length = (this).Length();
 
         return this / length;
     }
@@ -417,12 +493,19 @@ public readonly struct Vector2Fi
 
     public override bool Equals (object o)
     {
-        return (Vector2Fi) o == this;
+        if(o is Vector2Fi l) return l == this;
+        return false;
     }
 
     public override int GetHashCode()
     {
-        return (int)x + (int)y;
+        long hx = x.RawValue;
+        long hy = y.RawValue;
+
+        if(x > int.MaxValue | x < int.MinValue) hx >>= 32;
+        if(y > int.MaxValue | y < int.MinValue) hy >>= 32;
+
+        return (int)hx + (int)hx;
     }
 
     public PointF ToPoint ()

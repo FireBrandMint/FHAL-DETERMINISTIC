@@ -12,6 +12,11 @@ public struct CollisionResult
 
     public Vector2Fi SeparationDirection = new Vector2Fi();
 
+    public bool FindContacts = false;
+
+    public int ContactCount = 0;
+    public Vector2Fi Contact1, Contact2;
+
     public CollisionResult()
     {
         

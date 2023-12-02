@@ -1,8 +1,12 @@
 ﻿using System.Diagnostics;
 using Raylib_cs;
 
+
 public static class Program
 {
+    //dotnet publish -c release -r win-x64 --self-contained true -o "bin\Debug\net10.0\release"
+
+
     static bool ShouldLive = true;
 
     static GameLoop[] Loops;

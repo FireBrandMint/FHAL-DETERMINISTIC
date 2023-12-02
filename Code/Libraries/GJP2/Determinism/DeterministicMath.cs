@@ -34,8 +34,8 @@ public class DeterministicMath
     }
 
     public static FInt Sqrt( FInt f )
-
     {
+        //7864320000L = 1.920.000 FInt
         if(f.RawValue < 7864320000L)
         {
             FInt result;
@@ -75,7 +75,7 @@ public class DeterministicMath
     #endregion
 
     /// <summary>
-    /// Faster sqrt that can process numbers up to 1.920.000.
+    /// Faster sqrt that can process numbers up to 1.920.000 FInt.
     /// </summary>
     /// <returns></returns>
     public static FInt OptSqrt( FInt f )
@@ -105,8 +105,10 @@ public class DeterministicMath
             b >>= 1;
         }
         q >>= 8;
-        return q;
+        goto end;
     }
+
+
     while( b > 0x40 )
     {
         t = q + b;
@@ -132,12 +134,13 @@ public class DeterministicMath
                 b >>= 1;
             }
             q >>= 7;
-            return q;
+            goto end;
         }
         r <<= 1;
         b >>= 1;
     }
     q >>= 8;
+    end:
     return q;
 }
 
@@ -190,7 +193,7 @@ public class DeterministicMath
         if (isNegative) degrees *= -1;
 
         //If the angle is higher than 360, correct it. For example, 366 becomes 6.
-        if (degrees > maxAngle) degrees = degrees - maxAngle * (int)(degrees/maxAngle);
+        if (degrees > maxAngle) degrees = degrees % maxAngle;
 
         //if it's negative invert it back to positive, for example, -45 becomes 315
         if (isNegative) degrees = maxAngle - degrees;
@@ -217,6 +220,35 @@ public class DeterministicMath
         return FInt.Create(SIN_DEGREE_TABLE_4[position], false);
         */
     }
+
+    ///<summary>
+    ///Sine with point as input
+    /// (0 = 0 degrees, 1 = 360 degrees)
+    ///Recomended, it has better accuracy.
+    ///</summary>
+    public static FInt SinPoint(FInt point)
+    {
+        //SCRAPPED
+        //Factor that represents
+        //the divide in value of sin degree table.
+        //FInt factor = FInt.Create(1) / 4;
+
+        FInt maxAngle = new FInt(1);
+
+        bool isNegative = point < 0;
+
+        //If it's negative, make it calculable.
+        if (isNegative) point *= -1;
+
+        //If the angle is higher than 360, correct it. For example, 366 becomes 6.
+        if (point > maxAngle) point = point % maxAngle;
+
+        //if it's negative invert it back to positive, for example, -45 becomes 315
+        if (isNegative) point = maxAngle - point;
+
+        return fpsinPoint(point);
+    }
+
     //45
     //https://www.nullhardware.com/blog/fixed-point-sine-and-cosine-for-embedded-systems/
     //0-360 in degrees ONLY, highly unsafe otherwise.
@@ -258,6 +290,44 @@ public class DeterministicMath
         return toReturn;
     }
 
+    static FInt fpsinPoint(FInt point)
+    {
+        //Converts from 0-360*4096 range of angle to 0-32767
+        long semiConverted = point.RawValue << 3;
+        short i = (short)(semiConverted == 0? semiConverted : semiConverted - 1);
+
+        /* Convert (signed) input to a value between 0 and 8192. (8192 is pi/2, which is the region of the curve fit). */
+        /* ------------------------------------------------------------------- */
+        i <<= 1;
+        bool c = i<0; //set carry for output pos/neg
+
+        if(i == (i|0x4000)) // flip input value to corresponding value in range [0..8192)
+            i = (short)(32768 - i);
+        i = (short)((i & 0x7FFF) >> 1);
+        /* ------------------------------------------------------------------- */
+
+        /* The following section implements the formula:
+        = y * 2^-n * ( A1 - 2^(q-p)* y * 2^-n * y * 2^-n * [B1 - 2^-r * y * 2^-n * C1 * y]) * 2^(a-q)
+        Where the constants are defined as follows:
+        */
+        uint iu = (UInt32) i;
+        ulong A1=3370945099UL, B1=2746362156UL, C1=292421UL;
+        int n=13, p=32, q=31, r=3, a=12;
+
+        uint y = (uint)((C1*(iu))>>n);
+        y = (uint)(B1 - ((iu*y)>>r));
+        y = (uint)(iu * (y>>n));
+        y = (uint)(iu * (y>>n));
+        y = (uint)(A1 - (y>>(p-q)));
+        y = (uint)(iu * (y>>n));
+        y = (uint)((y+(1UL<<(q-a-1)))>>(q-a)); // Rounding
+
+        FInt toReturn;
+        toReturn.RawValue = c ? -y : y;
+
+        return toReturn;
+    }
+
     ///<summary>
     ///Cosine with degrees as input.
     ///Recomended, it has better accuracy.
@@ -265,6 +335,13 @@ public class DeterministicMath
     public static FInt CosD(FInt degrees)
     {
         return SinD(degrees + FInt.Create(90));
+    }
+
+    public static FInt CosPoint(FInt point)
+    {
+        FInt deg90 = new FInt();
+        deg90.RawValue = 1024;
+        return SinPoint(point + deg90);
     }
 
     ///<summary>
@@ -321,12 +398,12 @@ public class DeterministicMath
         if ( F > FInt.OneF )
             throw new ArithmeticException( "Bad Asin Input:" + F.ToDouble() );
 
-        FInt f1 = mul( mul( mul( mul( FInt.Create( 145103 >> FInt.SHIFT_AMOUNT, false ), F ) -
+        FInt f1 = mul( mul( mul( mul( new FInt{ RawValue = 145103 >> FInt.SHIFT_AMOUNT }, F ) -
             FInt.Create( 599880 >> FInt.SHIFT_AMOUNT, false ), F ) +
             FInt.Create( 1420468 >> FInt.SHIFT_AMOUNT, false ), F ) -
             FInt.Create( 3592413 >> FInt.SHIFT_AMOUNT, false ), F ) +
             FInt.Create( 26353447 >> FInt.SHIFT_AMOUNT, false );
-        FInt f2 = PI / FInt.Create( 2, true ) - ( Sqrt( FInt.OneF - F ) * f1 );
+        FInt f2 = (PI >> 1) - ( Sqrt( FInt.OneF - F ) * f1 );
 
         return isNegative ? f2.Inverse : f2;
     }
@@ -390,6 +467,11 @@ public class DeterministicMath
     public static FInt Max(FInt a1, FInt a2)
     {
         return a1 > a2 ? a1 : a2;
+    }
+
+    public static bool NearlyEqual(FInt a, FInt b, FInt tolerance)
+    {
+        return Abs(a - b) <= tolerance;
     }
 
 }

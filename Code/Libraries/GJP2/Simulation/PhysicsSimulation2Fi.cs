@@ -9,6 +9,13 @@ public class PhysicsSimulation2Fi
 {
     ShapeCook Cook = new ShapeCook();
 
+    public static bool CreatingRigid = false;
+
+    public RigidBody2Fi NewRigidBody()
+    {
+        var rigi = new RigidBody2Fi();
+    }
+
     /// <summary>
     /// <para>Creates a shape.</para>
     /// IMPORTANT: the shape is bound to this physics simulation
@@ -55,5 +62,23 @@ public class PhysicsSimulation2Fi
         Shape subject = Shape.NewCircle(pos, center, radius);
 
         return subject;
+    }
+}
+
+public class RigidBody2Fi
+{
+    #pragma warning disable 0169
+    int ID;
+
+    PhysicsSimulation2Fi Simulation;
+
+    private RigidBody2Fi()
+    {
+
+    }
+
+    public RigidBody2Fi(PhysicsSimulation2Fi simulation, int id)
+    {
+        Simulation = simulation;
     }
 }

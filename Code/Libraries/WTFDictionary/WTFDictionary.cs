@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 
 //Class that isn't a failure (surprisingly)
@@ -165,8 +166,13 @@ public class WTFDictionary<K, T>
 
         ++Lenght;
     }
-
-    public T AddIfNonexist(K key, T value)
+    /// <summary>
+    /// returns true if hash existed.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public bool AddIfNonexist(K key, T value)
     {
         int keyTrue = key.GetHashCode();
 
@@ -178,7 +184,7 @@ public class WTFDictionary<K, T>
 
             ++Lenght;
 
-            return value;
+            return false;
         }
 
         var searchResult = Find(keyTrue);
@@ -189,7 +195,7 @@ public class WTFDictionary<K, T>
 
         int indKey = MasterList[indexFirst].Key;
 
-        if(indKey == keyTrue) return MasterList[indexFirst].Value;
+        if(indKey == keyTrue) return true;
 
         bool oneIndexScenario = indexFirst == indexLast;
 
@@ -224,7 +230,7 @@ public class WTFDictionary<K, T>
 
         ++Lenght;
 
-        return value;
+        return false;
     }
 
     public T AddIfNonexist(K key, T value, out bool existed)
@@ -420,6 +426,39 @@ public class WTFDictionary<K, T>
         return false;
     }
 
+    public int GetTrueIndex(K key)
+    {
+        if(Lenght == 0) return -1;
+
+        int trueKey = key.GetHashCode();
+
+        var search = Find(trueKey);
+
+        var valu = MasterList[search.ind0];
+
+        int toReturn = -1;
+
+        if(valu.Key == trueKey)
+            toReturn = search.ind0;
+
+        return toReturn;
+    }
+
+    public T GetByTrueIndex(int trueInd)
+    {
+        return MasterList[trueInd].Value;
+    }
+
+    public void SetByTrueIndex(int trueInd, T value)
+    {
+        MasterList[trueInd] = new KeyValuePair<int, T>(MasterList[trueInd].Key, value);
+    }
+
+    public void RemoveByTrueIndex(int trueInd)
+    {
+        MasterList.RemoveAt(trueInd);
+    }
+
     public int[] GetKeysHash()
     {
         int mc = MasterList.Count;
@@ -465,6 +504,8 @@ public class WTFDictionary<K, T>
 
         int leftIndexLast;
 
+        var master = CollectionsMarshal.AsSpan(MasterList);
+
         loopStart:
 
         //If index first and index last are the same
@@ -479,8 +520,8 @@ public class WTFDictionary<K, T>
         leftIndexLast = (indexLast - indexFirst) >> 1;
         leftIndexLast += indexFirst;
 
-        bool leftHigher = MasterList[leftIndexLast].Key > key;
-        bool rightHigher = MasterList[leftIndexLast+1].Key > key;
+        bool leftHigher = master[leftIndexLast].Key > key;
+        bool rightHigher = master[leftIndexLast+1].Key > key;
 
 
         //If both are higher then the result is more to the left,

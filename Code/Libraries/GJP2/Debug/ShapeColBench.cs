@@ -58,10 +58,10 @@ public static class ShapeColBench
         Shape s2 = TestPool[rand.Next(TestPool.Length - 2000)];
         //Shape s1 = Shape.NewRectangle(new Vector2Fi(0,0), new Vector2Fi(0,0), new FInt(5), new Vector2Fi(5,5), new Vector2Fi(1,1));
         //Shape s2 = Shape.NewRectangle(new Vector2Fi(2,0), new Vector2Fi(0,0), new FInt(-5), new Vector2Fi(5,5), new Vector2Fi(1,1));
-        //s1.Position += new Vector2Fi(1, 0);
-        //s2.Position += new Vector2Fi(1, 0);
-        s1.Rotation += 1;
-        s2.Rotation += 1;
+        s1.Position += new Vector2Fi(1, 0);
+        s2.Position += new Vector2Fi(1, 0);
+        s1.Rotation += 359;
+        s2.Rotation += 359;
         s1.BakeShape();
         s2.BakeShape();
 

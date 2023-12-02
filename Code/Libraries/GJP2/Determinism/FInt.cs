@@ -11,21 +11,13 @@ public struct FInt
     ///<summary>
     ///The lowest negative value possible for this datatype.
     ///</summary>
-    public static readonly FInt MinValue;
+    public static readonly FInt MinValue = new FInt() { RawValue = long.MinValue };
     ///<summary>
     ///The highest positive value possible for this datatype.
     ///</summary>
-    public static readonly FInt MaxValue;
+    public static readonly FInt MaxValue = new FInt() { RawValue = long.MaxValue };
 
-    public static readonly FInt Half;
-
-    static FInt()
-    {
-        MinValue = FInt.Create(long.MinValue, false);
-        MaxValue = FInt.Create(long.MaxValue, false);
-
-        Half = new FInt(0, 5);
-    }
+    public static readonly FInt Half = new FInt(5, 1);
 
     public long RawValue;
     public const int SHIFT_AMOUNT = 12; //12 is 4096
@@ -41,13 +33,29 @@ public struct FInt
         RawValue = Value << SHIFT_AMOUNT;
     }
 
-    public FInt(long integer, long decimals)
+    /// <summary>
+    /// Initializes with displacement.
+    /// <para></para>
+    /// For example: new FInt(5, 1) is 0.5,
+    /// new FInt(7213, 2) is 72.13,
+    /// new FInt(8276, 3) is 8.276
+    /// </summary>
+    /// <param name="integer"></param>
+    /// <param name="decimalCount"></param>
+    public FInt(long integer, int decimalCount)
     {
         long decEnsurer = 1;
 
-        while (decEnsurer <= decimals) decEnsurer*=10;
+        for(int i = 0; i < decimalCount; ++i) decEnsurer*=10;
+        long raw = integer << SHIFT_AMOUNT;
+        RawValue = ( raw << SHIFT_AMOUNT ) / ( decEnsurer << SHIFT_AMOUNT );
+    }
 
-        RawValue = (integer << SHIFT_AMOUNT) + (decimals << SHIFT_AMOUNT) / decEnsurer;
+    public static FInt FromRaw(long raw)
+    {
+        var a = new FInt();
+        a.RawValue = raw;
+        return a;
     }
 
     public static FInt Create( long StartingRawValue, bool UseMultiple )
@@ -418,7 +426,16 @@ public struct FInt
 
     public static explicit operator float( FInt src )
     {
-        return (float)((double) src.RawValue / One); 
+        return (float)(src.RawValue / (double)One); 
+    }
+    public static explicit operator double( FInt src )
+    {
+        return src.RawValue / (double)One; 
+    }
+
+    public static explicit operator bool( FInt src )
+    {
+        return src.RawValue > 0;
     }
 
     public static explicit operator FInt( uint src )
@@ -456,11 +473,6 @@ public struct FInt
         FInt fInt;
         fInt.RawValue = src.RawValue;
         return fInt;
-    }
-
-    public static explicit operator bool( FInt src )
-    {
-        return src.RawValue > 0;
     }
 
     public static FInt Parse( string src )
