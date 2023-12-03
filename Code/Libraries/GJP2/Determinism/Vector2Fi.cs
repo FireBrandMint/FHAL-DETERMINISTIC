@@ -500,7 +500,7 @@ public readonly struct Vector2Fi
     public override int GetHashCode()
     {
         long hx = x.RawValue;
-        long hy = y.RawValue;
+        long hy = y.RawValue << 4;
 
         if(x > int.MaxValue | x < int.MinValue) hx >>= 32;
         if(y > int.MaxValue | y < int.MinValue) hy >>= 32;

@@ -66,9 +66,9 @@ public static class ShapeColBench
         s2.BakeShape();
 
         
-        //CollisionResult res = new CollisionResult();
-        //s1.IntersectsInfo(s2, ref res);
-        //res.Separation += new Vector2Fi();
+        CollisionResult res = new CollisionResult();
+        s1.IntersectsInfo(s2, ref res);
+        res.Separation += new Vector2Fi();
 
 
         s1.Dispose();

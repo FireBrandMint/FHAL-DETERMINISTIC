@@ -78,9 +78,10 @@ public class WTFSaltyDictionary <K, V>
             var found = Dict.GetByTrueIndex(trueInd);
             if(found.Value.Item1)
             {
-                if(!Collisions[key].AddNode(new KeyValuePair<K, V>(key, value)))
-                    throw new Exception("Tried to add an already existing element");
+                var toadd = Collisions[key];
 
+                if(!toadd.AddNode(new KeyValuePair<K, V>(key, value)))
+                    throw new Exception("Tried to add an already existing element");
             }
             else
             {
@@ -93,6 +94,72 @@ public class WTFSaltyDictionary <K, V>
                 Collisions.Add(key, first);
             }
         }
+    }
+
+    public bool TryGetValue(K key, out V value)
+    {
+        bool found = false;
+        var trueIdx1 = Dict.GetTrueIndex(key);
+        if(trueIdx1 == -1) goto failure;
+
+        var val = Dict.GetByTrueIndex(trueIdx1);
+        V result;
+        if(val.Value.Item1)
+        {
+            var n = Collisions[key].GetNode(key);
+            if(n == null) goto failure;
+                result = n.Value.Value;
+        }
+        else
+        {
+            if(!key.Equals(val.Key)) goto failure;
+            result = val.Value.Item2;
+        }
+        value = result;
+        found = true;
+
+        goto end;
+        failure:;
+        value = default(V);
+
+        end:;
+        return found;
+    }
+
+    public bool TryRemove(K key)
+    {
+        var initial = Dict.GetTrueIndex(key);
+
+        if(Dict.GetByTrueIndex(initial).Value.Item1)
+        {
+            var nodeIdx = Collisions.GetTrueIndex(key);
+            var node = Collisions.GetByTrueIndex(nodeIdx);
+            if(node.Next == null)
+            {
+                if(!key.Equals(node.Value.Key)) return false;
+
+                Collisions.RemoveByTrueIndex(nodeIdx);
+            }
+            else
+            {
+                if(key.Equals(node.Value.Key))
+                {
+                    Collisions.SetByTrueIndex(nodeIdx, node.Next);
+                    node.Clear();
+                    Cache.Push(node);
+                    return true;
+                }
+
+                var res2 = node.RemoveNode(key);
+                if(res2 == null) return false;
+                res2.Clear();
+                Cache.Push(res2);
+            }
+        }
+        else
+            Dict.RemoveByTrueIndex(initial);
+
+        return true;
     }
 
     public void Remove(K key)
@@ -189,6 +256,22 @@ public class WTFSaltyDictionary <K, V>
             }
 
             return null;
+        }
+
+        public bool Has(K key)
+        {
+            Node subject = this;
+            Node last = null;
+            while(subject.Next != null)
+            {
+                if(key.Equals(subject.Value.Key))
+                    return true;
+                
+                subject = subject.Next;
+                last = subject;
+            }
+
+            return false;
         }
 
         public void SetV(V v)
