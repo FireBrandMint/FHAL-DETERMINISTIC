@@ -1,6 +1,8 @@
 using System;
 using System.Runtime.CompilerServices;
 
+namespace FHAL.Math;
+
 public class DeterministicMath
 {
     //https://stackoverflow.com/questions/605124/fixed-point-math-in-c
@@ -35,11 +37,11 @@ public class DeterministicMath
 
     public static FInt Sqrt( FInt f )
     {
-        //7864320000L = 1.920.000 FInt
-        if(f.RawValue < 7864320000L)
+        //9625600001L = 2.350.000 FInt
+        if(f.RawValue < 9625600001L)
         {
             FInt result;
-            result.RawValue = (long)(sqrtfx16((ulong)f.RawValue << 4) >> 4);
+            result.RawValue = (long)(sqrtfx12((ulong)f.RawValue));
             return result;
         }
 
@@ -75,25 +77,48 @@ public class DeterministicMath
     #endregion
 
     /// <summary>
-    /// Faster sqrt that can process numbers up to 1.920.000 FInt.
+    /// Faster sqrt that can process numbers up to 2.350.000 FInt.
     /// </summary>
     /// <returns></returns>
     public static FInt OptSqrt( FInt f )
     {
         FInt result;
-        result.RawValue = (long)(sqrtfx16((ulong)f.RawValue << 4) >> 4);
+        result.RawValue = (long)(sqrtfx12((ulong)f.RawValue));
         return result;
     }
 
     //from chmike/fpsqrt
-    private static ulong sqrtfx16(ulong v) {
-    ulong t, q, b, r;
-    r = v; 
-    q = 0;          
-    b = 0x40000000UL;
-    if( r < 0x40000200 )
+    private static ulong sqrtfx12(ulong v)
     {
-        while( b != 0x40 )
+        ulong t, q, b, r;
+        r = v; 
+        q = 0;          
+        b = 0x40000000UL;
+        
+        if( r < 0x4000200 )
+        {
+            while( b != 0x40 )
+            {
+                t = q + b;
+                if( r >= t )
+                {
+                    r -= t;
+                    q = t + b; // equivalent to q += 2*b
+                }
+                r <<= 1;
+                b >>= 1;
+            }
+            q >>= 10;
+            goto end;
+        }
+
+        goto cOp;
+        end:;
+        return q;
+
+        cOp:;
+
+        while( b > 0x40 )
         {
             t = q + b;
             if( r >= t )
@@ -101,48 +126,40 @@ public class DeterministicMath
                 r -= t;
                 q = t + b; // equivalent to q += 2*b
             }
+            
+            if( r >= 0x80000000 )
+            {
+                goto special;
+            }
             r <<= 1;
             b >>= 1;
         }
-        q >>= 8;
+
+        goto skipSpecial;
+        special:;
+
+        q >>= 1;
+        b >>= 1;
+        r >>= 1;
+        while( b > 0x20 )
+        {
+            t = q + b;
+            if( r >= t )
+            {
+                r -= t;
+                q = t + b;
+            }
+            r <<= 1;
+            b >>= 1;
+        }
+        q >>= 9;
+        goto end;
+
+        skipSpecial:;
+        
+        q >>= 10;
         goto end;
     }
-
-
-    while( b > 0x40 )
-    {
-        t = q + b;
-        if( r >= t )
-        {
-            r -= t;
-            q = t + b; // equivalent to q += 2*b
-        }
-        if( (r & 0x80000000) != 0 )
-        {
-            q >>= 1;
-            b >>= 1;
-            r >>= 1;
-            while( b > 0x20 )
-            {
-                t = q + b;
-                if( r >= t )
-                {
-                    r -= t;
-                    q = t + b;
-                }
-                r <<= 1;
-                b >>= 1;
-            }
-            q >>= 7;
-            goto end;
-        }
-        r <<= 1;
-        b >>= 1;
-    }
-    q >>= 8;
-    end:
-    return q;
-}
 
     #region Sin
     public static FInt Sin( FInt i )

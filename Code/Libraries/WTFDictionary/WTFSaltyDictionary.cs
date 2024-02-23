@@ -55,6 +55,9 @@ public class WTFSaltyDictionary <K, V>
     WTFDictionary<K, KeyValuePair<K, (bool, V)>> Dict;
 
     WTFDictionary<K, Node> Collisions;
+    int _Count = 0;
+
+    public int Count { get => _Count; }
 
     public WTFSaltyDictionary ()
     {
@@ -72,7 +75,10 @@ public class WTFSaltyDictionary <K, V>
     {
         int trueInd = Dict.GetTrueIndex(key);
         if(trueInd == -1)
+        {
             Dict.Add(key, new KeyValuePair<K, (bool, V)>(key, (false, value)));
+            ++_Count;
+        }
         else
         {
             var found = Dict.GetByTrueIndex(trueInd);
@@ -82,6 +88,8 @@ public class WTFSaltyDictionary <K, V>
 
                 if(!toadd.AddNode(new KeyValuePair<K, V>(key, value)))
                     throw new Exception("Tried to add an already existing element");
+                else ++_Count;
+
             }
             else
             {
@@ -92,6 +100,8 @@ public class WTFSaltyDictionary <K, V>
                 first.AddNode(new KeyValuePair<K, V>(key, value));
 
                 Collisions.Add(key, first);
+
+                ++_Count;
             }
         }
     }
@@ -175,6 +185,7 @@ public class WTFSaltyDictionary <K, V>
                 if(!key.Equals(node.Value.Key)) throw new Exception($"Element '{key.ToString()}' doesn't exist, aborting.");
 
                 Collisions.RemoveByTrueIndex(nodeIdx);
+                --_Count;
             }
             else
             {
@@ -183,6 +194,7 @@ public class WTFSaltyDictionary <K, V>
                     Collisions.SetByTrueIndex(nodeIdx, node.Next);
                     node.Clear();
                     Cache.Push(node);
+                    --_Count;
                     return;
                 }
 
@@ -190,11 +202,24 @@ public class WTFSaltyDictionary <K, V>
                 if(res2 == null) throw new Exception($"Element '{key.ToString()}' doesn't exist, aborting.");
                 res2.Clear();
                 Cache.Push(res2);
+                --_Count;
             }
         }
         else
+        {
             Dict.RemoveByTrueIndex(initial);
+            --_Count;
+        }
             
+    }
+
+    public void Clear()
+    {
+        Dict.Clear();
+
+        Collisions.Clear();
+
+        _Count = 0;
     }
 
     private class Node

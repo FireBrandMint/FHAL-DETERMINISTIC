@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using GJP2.Optimization;
+using FHAL.Math;
 
 namespace GJP2;
 public struct Shape
@@ -62,6 +63,9 @@ public struct Shape
         }
     }
 
+    /// <summary>
+    /// In circles, this works as radius.
+    /// </summary>
     public Vector2Fi Scale
     {
         get => TrueScale;
@@ -94,7 +98,7 @@ public struct Shape
     readonly VecMemBlock OriginModel;
     VecMemBlock BakedModel;
     VecMemBlock Normals;
-    AABB Area;
+    public AABB Area;
     private bool DisposedActual = false;
 
     (bool updateModel, bool updateArea, bool updateNormals) Should;
@@ -999,6 +1003,21 @@ public struct Shape
     {
         public Vector2Fi TopLeft;
         public Vector2Fi BottomRight;
+
+        public bool Intersects(ref AABB other)
+        {
+            Vector2Fi atl = TopLeft;
+            Vector2Fi abr = BottomRight;
+            Vector2Fi btl = other.TopLeft;
+            Vector2Fi bbr = other.BottomRight;
+            FInt awid = abr.x - atl.x;
+            FInt bwid = bbr.x - btl.x;
+            FInt ahei = abr.y - atl.y;
+            FInt bhei = bbr.y - btl.y;
+
+            return (DeterministicMath.Abs(atl.x - btl.x) * 2 < (awid + bwid)) &&
+            (DeterministicMath.Abs(atl.y - btl.y) * 2 < (ahei + bhei));
+        }
     }
 
     public enum Type : short

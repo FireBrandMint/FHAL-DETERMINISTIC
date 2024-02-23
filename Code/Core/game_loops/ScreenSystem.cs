@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Raylib_cs;
 
-
+namespace FHAL.GameLoops;
 public class ScreenSystem : GameLoop
 {
     public static ScreenSystem Singleton;
@@ -15,6 +15,8 @@ public class ScreenSystem : GameLoop
     ImageResolution WindowResolution = new ImageResolution(1280, 720);
 
     RenderTexture2D ScreenTexture;
+
+    public ScalingType ScalingMode;
 
     public ImageResolution GetResolution() => WindowResolution;
 
@@ -30,6 +32,7 @@ public class ScreenSystem : GameLoop
     {
         Raylib.DrawText("Hello, world!", 12, 12, 20, Color.BLACK);
         Raylib.DrawText("Mouse pos", MousePos.x.ToInt(), MousePos.y.ToInt(), 20, Color.BLACK);
+        Raylib.DrawRectangle(MousePos.x.ToInt(), MousePos.y.ToInt(), 7, 7, Color.GREEN);
     }
 
     protected override void OnDeltaUpdate()
@@ -42,14 +45,21 @@ public class ScreenSystem : GameLoop
 
         if(Delta < 1.0) return;
         Delta = 0.0;
-        
-        WindowSize.Width = Raylib.GetScreenWidth();
-        WindowSize.Height = Raylib.GetScreenHeight();
 
-        float scale = MathF.Max(
-            (float) WindowSize.Width / WindowResolution.Width,
-        (float) WindowSize.Height / WindowResolution.Height
-        );
+        int sw = Raylib.GetScreenWidth();
+        int sh = Raylib.GetScreenHeight();
+        
+        WindowSize.Width = sw;
+        WindowSize.Height = sh;
+
+        //scales the window according to scaling mode
+        float scale = 1f;
+        if(ScalingMode == ScalingType.BIGGEST_BORDER)
+            scale = MathF.Max((float) WindowSize.Width / WindowResolution.Width, (float) WindowSize.Height / WindowResolution.Height);
+        else if(ScalingMode == ScalingType.SMALLEST_BORDER)
+            scale = MathF.Min((float) WindowSize.Width / WindowResolution.Width, (float) WindowSize.Height / WindowResolution.Height);
+        else
+            scale = MathF.Min((float) WindowSize.Width / WindowResolution.Width, (float) WindowSize.Height / WindowResolution.Height);
 
         float widthProportion = (float) WindowResolution.Width / WindowResolution.Height;
         float widthPropWin = (float) WindowSize.Width / WindowSize.Height;
@@ -63,32 +73,16 @@ public class ScreenSystem : GameLoop
         Raylib.EndTextureMode();
 
         Raylib.BeginDrawing();
-        Rectangle area;
-        if(widthProportion > widthPropWin)
-        {
-            var real = ScreenTexture.texture.height * widthPropWin;
-            area = new Rectangle(
-                ScreenTexture.texture.width *0.5f - (real * 0.5f), 0f,
-                real, (float)-ScreenTexture.texture.height);
-        }
-        else if(widthProportion < widthPropWin)
-        {
-            var real = ScreenTexture.texture.width * (1f / widthPropWin);
-            area = new Rectangle(
-                0f, ScreenTexture.texture.height *0.5f - (real * 0.5f),
-                (float)-ScreenTexture.texture.width, real);
-        }
-        else
-        {
-            area = new Rectangle(0f, 0f, (float) ScreenTexture.texture.width, (float)-ScreenTexture.texture.height);
-        }
-        Rectangle screen = new Rectangle(
-            0.0f,
-            0.0f,
-            WindowSize.Width,
-            WindowSize.Height
+        Raylib.ClearBackground(Color.WHITE);
+        Raylib.DrawTexturePro
+        (
+            ScreenTexture.texture,
+            new Rectangle(0f, 0f, (float)ScreenTexture.texture.width, (float) -ScreenTexture.texture.height),
+            new Rectangle((WindowSize.Width - ((float)WindowResolution.Width*scale))*0.5f, 
+            (WindowSize.Height - ((float)WindowResolution.Height*scale))*0.5f,
+            (float)WindowResolution.Width*scale, (float)WindowResolution.Height*scale),
+            new Vector2(0f, 0f), 0f, Color.WHITE
         );
-        Raylib.DrawTexturePro(ScreenTexture.texture, area, screen, new Vector2(0,0), 0.0f, Color.WHITE);
 
         Raylib.EndDrawing();
     }
@@ -96,15 +90,16 @@ public class ScreenSystem : GameLoop
     private void CacheMouseInfo(float scale)
     {
         var mouse = Raylib.GetMousePosition();
-        bool pressedLeft = Raylib.IsMouseButtonPressed(MouseButton.MOUSE_BUTTON_LEFT);
-        bool pressedRight = Raylib.IsMouseButtonPressed(MouseButton.MOUSE_BUTTON_RIGHT);
 
         Vector2 virtualMouse = new Vector2(
-            mouse.X * (1f / scale),
-            mouse.Y * (1f / scale)
+            (mouse.X - (WindowSize.Width - WindowResolution.Width * scale) * 0.5f) / scale,
+            (mouse.Y - (WindowSize.Height - (WindowResolution.Height * scale)) * 0.5f) / scale
         );
 
         var final = Vector2.Clamp(virtualMouse, new Vector2(0f,0f), new Vector2(WindowResolution.Width, WindowResolution.Height));
+
+        bool pressedLeft = Raylib.IsMouseButtonPressed(MouseButton.MOUSE_BUTTON_LEFT);
+        bool pressedRight = Raylib.IsMouseButtonPressed(MouseButton.MOUSE_BUTTON_RIGHT);
 
         MousePos = new Vector2Fi((FInt)final.X, (FInt)final.Y);
         MousePressedLeft = pressedLeft;
@@ -120,6 +115,8 @@ public class ScreenSystem : GameLoop
         
         Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_RESIZABLE);
         Raylib.InitWindow(WindowSize.Width, WindowSize.Height, "Hello World");
+
+        ScalingMode = ScalingType.BIGGEST_BORDER;
 
         ScreenTexture = Raylib.LoadRenderTexture(WindowResolution.Width, WindowResolution.Height);
 
@@ -140,5 +137,11 @@ public class ScreenSystem : GameLoop
         {
             Width = width; Height = height;
         }
+    }
+
+    public enum ScalingType : int
+    {
+        BIGGEST_BORDER = 0,
+        SMALLEST_BORDER = 1
     }
 }

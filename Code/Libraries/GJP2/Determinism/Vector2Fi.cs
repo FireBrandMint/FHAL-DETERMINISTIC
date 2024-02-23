@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using FHAL.Math;
 
 ///<summary>
 ///Deterministic Vector2D.
@@ -9,12 +10,7 @@ using System.Runtime.InteropServices;
 [StructLayout(LayoutKind.Sequential)]
 public readonly struct Vector2Fi
 {
-    public static readonly Vector2Fi ZERO;
-
-    static Vector2Fi ()
-    {
-        ZERO = new Vector2Fi(0,0);
-    }
+    public static readonly Vector2Fi ZERO = new Vector2Fi(new FInt(0), new FInt(0));
 
     public readonly FInt x,y;
 
@@ -333,9 +329,6 @@ public readonly struct Vector2Fi
         xZero = x.RawValue == 0;
         yZero = y.RawValue == 0;
 
-        if(DeterministicMath.Abs(x) < 900 & DeterministicMath.Abs(y) < 900)
-            return OptNormalized();
-
         //If below assures normalize doesn't calculate an answer it already has.
         if(xZero | yZero)
         {
@@ -378,6 +371,16 @@ public readonly struct Vector2Fi
     public Vector2Fi Abs()
     {
         return new Vector2Fi(DeterministicMath.Abs(x), DeterministicMath.Abs(y));
+    }
+
+    public Vector2Fi Min(Vector2Fi other)
+    {
+        return new Vector2Fi(DeterministicMath.Min(this.x, other.x), DeterministicMath.Min(this.y, other.y));
+    }
+
+    public Vector2Fi Max(Vector2Fi other)
+    {
+        return new Vector2Fi(DeterministicMath.Max(this.x, other.x), DeterministicMath.Max(this.y, other.y));
     }
 
     public override string ToString()
@@ -502,10 +505,12 @@ public readonly struct Vector2Fi
         long hx = x.RawValue;
         long hy = y.RawValue << 4;
 
-        if(x > int.MaxValue | x < int.MinValue) hx >>= 32;
-        if(y > int.MaxValue | y < int.MinValue) hy >>= 32;
+        long final = hx + hy;
 
-        return (int)hx + (int)hx;
+        final <<= 32;
+        final >>= 32;
+
+        return (int)final;
     }
 
     public PointF ToPoint ()

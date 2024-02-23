@@ -1,7 +1,8 @@
 ﻿using System.Diagnostics;
+using FHAL.GameLoops;
 using Raylib_cs;
 
-
+namespace FHAL;
 public static class Program
 {
     //dotnet publish -c release -r win-x64 --self-contained true -o "bin\Debug\net10.0\release"

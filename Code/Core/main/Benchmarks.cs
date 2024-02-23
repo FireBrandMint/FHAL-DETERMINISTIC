@@ -45,8 +45,8 @@ public class Benchmarks
         }
 
         var final = ((elapsed / (double)quantity) * (1d / Stopwatch.Frequency)) * 1000000d;
-        var whole = ((elapsed) * (1d / (Stopwatch.Frequency /60.0)));
+        var whole = (elapsed) * (1d / (Stopwatch.Frequency));
 
-        Console.WriteLine($"Average: {final.ToString()}us, Total: {whole}frames");
+        Console.WriteLine($"Average: {final.ToString()}us, Total: {whole}s");
     }
 }
